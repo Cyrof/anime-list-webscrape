@@ -70,7 +70,14 @@ class Scrape():
         df_concat = pd.concat(self.__list, axis=1)
         df_concat.to_csv('Anime.csv', encoding='utf-8')
 
+    def convert_excel(self):
+        csvData = pd.read_csv('Anime.csv', encoding='utf-8')
+        excelFile = pd.ExcelWriter('ListOfAnime.xlsx')
+        csvData.to_excel(excelFile, index=False)
+        excelFile.save()
+        
 if __name__ == '__main__':
     s = Scrape()
     s.getSoupData()
     s.saveData()
+    s.convert_excel()

@@ -1,7 +1,13 @@
 import os
 import sys
+import getData
 
 
+def runScrape():
+    s = getData.Scrape()
+    s.getSoupData()
+    s.saveData()
+    s.convert_excel()
 
 # create and write env
 def create_env(sess):
@@ -16,5 +22,7 @@ def get_sess():
 
 if sys.platform == 'win32':
     get_sess()
+    runScrape()
 elif sys.platform == 'linux':
     get_sess()
+    runScrape()
