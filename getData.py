@@ -37,9 +37,12 @@ class Scrape():
         newUrl = self.__url + f'?{newquery}'
         print(newUrl)
         while True:
+            print("test")
+            print(self.__cookies)
             r = requests.get(newUrl, cookies=self.__cookies)
+            print(r)
             if r.status_code != 200:
-                time.sleep(3)
+                time.sleep(5)
                 continue
             else:
                 break
