@@ -8,7 +8,7 @@ import pandas as pd
 
 class Scrape():
     def __init__(self):
-        self.__url = 'https://9anime.to/user/watch-list'
+        self.__url = 'https://aniwave.bz/user/watch-list'
         self.__numOfFolders = 6
         dotenv.load_dotenv('secret.env')
         self.__cookies = {
@@ -36,24 +36,33 @@ class Scrape():
         newquery = self._query + f'{str(n)}&page={str(i)}'
         newUrl = self.__url + f'?{newquery}'
         print(newUrl)
-        r = requests.get(newUrl, cookies=self.__cookies)
+        while True:
+            r = requests.get(newUrl, cookies=self.__cookies)
+            if r.status_code != 200:
+                time.sleep(3)
+                continue
+            else:
+                break
+        print(r)
         s = BeautifulSoup(r.text, 'html.parser')
         return s
 
     def getSoupData(self):
         for n in range(1, self.__numOfFolders):
             animeNList = []
+            print(n)
             s = self.getSoupFolder(n)
             listOfAnimeNamestag = s.find_all(class_='d-title')
             animeNList = [n.text for n in listOfAnimeNamestag]
             for i in range(2, 20):
                 s = self.getSoupPage(n, i)
+                # print(s)
                 listOfAnimeNamestag = s.find_all(class_='d-title')
 
                 if len(listOfAnimeNamestag) != 0:
                     animeNList = animeNList + \
                         ([n.text for n in listOfAnimeNamestag])
-                    time.sleep(2)
+                    time.sleep(5)
                 else:
                     break
 
