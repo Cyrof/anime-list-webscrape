@@ -8,52 +8,69 @@ import pandas as pd
 
 class Scrape():
     def __init__(self):
-        self.__url = 'https://aniwave.bz/user/watch-list'
-        self.__numOfFolders = 6
-        dotenv.load_dotenv('secret.env')
+        """
+        Initialise the Scrape class.
+        """
+        self.__url = 'https://aniwavetv.to/user/watch-list'
+        self.__numOfFolders = 6 # Number of folders to scrape
+        dotenv.load_dotenv('secret.env') # Load environment variables from 'secret.env'
         self.__cookies = {
-            "session": os.environ.get('SESS')
+            "session": os.environ.get('SESS') # Session cookie fro authentication
         }
-        self.__list = []
-        self._query = 'folder='
+        self.__list = [] # List to store DataFrames for each folder
+        self._query = 'folder=' #   Query string for folder parameter
         self.pageNameCases = {
             1: 'Watching',
             2: 'Watched',
             3: 'On-Hold',
             4: 'Dropped',
             5: 'Planned'
-        }
+        } # Mapping folder numbers to their name
 
     def getSoupFolder(self, n):
+        """
+        Get the BeautifulSoup object for the initial page of a folder
+        :param n: folder number
+        :return s: returns BeautifulSoup Parsed with HTML of the folder page
+        """
         newquery = self._query + str(n)
         newUrl = self.__url + f'?{newquery}'
-        print(newUrl)
+        # print(newUrl)
         r = requests.get(newUrl, cookies=self.__cookies)
         s = BeautifulSoup(r.text, 'html.parser')
         return s
 
     def getSoupPage(self, n, i):
+        """
+        Get the BeautifulSoup object for a specific page of a folder.
+        :param n: Folder number
+        :param i: Page number
+        :return s: return BeautifulSoup with Parsed HTML of the specific page
+        """
         newquery = self._query + f'{str(n)}&page={str(i)}'
         newUrl = self.__url + f'?{newquery}'
         print(newUrl)
         while True:
-            print("test")
-            print(self.__cookies)
+            # print("test")
+            # print(self.__cookies)
             r = requests.get(newUrl, cookies=self.__cookies)
-            print(r)
+            # print(r)
             if r.status_code != 200:
-                time.sleep(5)
+                time.sleep(5) # Wait and retry if the request fails
                 continue
             else:
                 break
-        print(r)
+        # print(r)
         s = BeautifulSoup(r.text, 'html.parser')
         return s
 
     def getSoupData(self):
+        """
+        Scrape anime data from all folders and store them in the list of DataFrames.
+        """
         for n in range(1, self.__numOfFolders):
             animeNList = []
-            print(n)
+            # print(n)
             s = self.getSoupFolder(n)
             listOfAnimeNamestag = s.find_all(class_='d-title')
             animeNList = [n.text for n in listOfAnimeNamestag]
@@ -74,19 +91,33 @@ class Scrape():
 
 
     def createDF(self, listOfAnimeNames, n):
+        """
+        Create a DataFrame from the list of anime names for a specific folder.
+        :param ListOfAnimeNames: list of anime names
+        :param n: folder number 
+        :return df: return the DataFrame containing the anime names
+        """
         df = pd.DataFrame(listOfAnimeNames, columns=[self.pageNameCases[n]])
         return df
 
 
     def saveData(self):
+        """
+        Save the scraped data to a CSV file.
+        """
         df_concat = pd.concat(self.__list, axis=1)
         df_concat.to_csv('Anime.csv', encoding='utf-8')
+        print("Saved to csv file")
 
     def convert_excel(self):
+        """
+        Convert the CSV file to an Excel file
+        """
         csvData = pd.read_csv('Anime.csv', encoding='utf-8')
         excelFile = pd.ExcelWriter('ListOfAnime.xlsx')
         csvData.to_excel(excelFile, index=False)
-        excelFile.save()
+        excelFile.close()
+        print("Saved to excel file")
         
 if __name__ == '__main__':
     s = Scrape()
