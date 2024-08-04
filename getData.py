@@ -5,19 +5,21 @@ import os
 import time
 import pandas as pd
 from tqdm import tqdm
+import sys
 
 
 class Scrape():
-    def __init__(self, cookies=None):
+    def __init__(self, cookies=None, headers=None):
         """
         Initialise the Scrape class.
         """
-        self.__url = 'https://aniwavetv.to/user/watch-list'
+        self.__url = 'https://aniwave.to/user/watch-list'
         self.__numOfFolders = 6 # Number of folders to scrape
         # dotenv.load_dotenv('secret.env') # dotenv is deprecated in Python 3.12.4
         # self.__cookies = {
         #     "session": os.environ.get('SESS') # Session cookie fro authentication
         # }
+        self.__headers = headers
         self.__cookies = {
             "session": cookies
         }
@@ -40,7 +42,7 @@ class Scrape():
         newquery = self._query + str(n)
         newUrl = self.__url + f'?{newquery}'
         # print(newUrl)
-        r = requests.get(newUrl, cookies=self.__cookies)
+        r = requests.get(newUrl, cookies=self.__cookies, headers=self.__headers)
         s = BeautifulSoup(r.text, 'html.parser')
         return s
 
@@ -59,7 +61,7 @@ class Scrape():
         while True:
             # print("test")
             # print(self.__cookies)
-            r = requests.get(newUrl, cookies=self.__cookies)
+            r = requests.get(newUrl, cookies=self.__cookies, headers=self.__headers)
             # print(r)
             if r.status_code != 200 and retry_counter <= MAX_RETRIES:
                 time.sleep(5) # Wait and retry if the request fails
@@ -67,6 +69,7 @@ class Scrape():
                 continue
             elif retry_counter > MAX_RETRIES:
                 print("Program timeout. Retried 15 times.")
+                sys.exit(0)
                 break
             else:
                 retry_counter = 0 # reset retry counter
