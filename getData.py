@@ -1,21 +1,25 @@
 from bs4 import BeautifulSoup
 import requests
-import dotenv
+# import dotenv
 import os
 import time
 import pandas as pd
+from tqdm import tqdm
 
 
 class Scrape():
-    def __init__(self):
+    def __init__(self, cookies=None):
         """
         Initialise the Scrape class.
         """
         self.__url = 'https://aniwavetv.to/user/watch-list'
         self.__numOfFolders = 6 # Number of folders to scrape
-        dotenv.load_dotenv('secret.env') # Load environment variables from 'secret.env'
+        # dotenv.load_dotenv('secret.env') # dotenv is deprecated in Python 3.12.4
+        # self.__cookies = {
+        #     "session": os.environ.get('SESS') # Session cookie fro authentication
+        # }
         self.__cookies = {
-            "session": os.environ.get('SESS') # Session cookie fro authentication
+            "session": cookies
         }
         self.__list = [] # List to store DataFrames for each folder
         self._query = 'folder=' #   Query string for folder parameter
@@ -47,18 +51,25 @@ class Scrape():
         :param i: Page number
         :return s: return BeautifulSoup with Parsed HTML of the specific page
         """
+        MAX_RETRIES = 15
         newquery = self._query + f'{str(n)}&page={str(i)}'
         newUrl = self.__url + f'?{newquery}'
+        retry_counter = 0
         print(newUrl)
         while True:
             # print("test")
             # print(self.__cookies)
             r = requests.get(newUrl, cookies=self.__cookies)
             # print(r)
-            if r.status_code != 200:
+            if r.status_code != 200 and retry_counter <= MAX_RETRIES:
                 time.sleep(5) # Wait and retry if the request fails
+                print(f"Status code: {r.status_code}. Retrying...")
                 continue
+            elif retry_counter > MAX_RETRIES:
+                print("Program timeout. Retried 15 times.")
+                break
             else:
+                retry_counter = 0 # reset retry counter
                 break
         # print(r)
         s = BeautifulSoup(r.text, 'html.parser')
@@ -68,13 +79,13 @@ class Scrape():
         """
         Scrape anime data from all folders and store them in the list of DataFrames.
         """
-        for n in range(1, self.__numOfFolders):
+        for n in tqdm(range(1, self.__numOfFolders), desc="Scraping Folders"):
             animeNList = []
             # print(n)
             s = self.getSoupFolder(n)
             listOfAnimeNamestag = s.find_all(class_='d-title')
             animeNList = [n.text for n in listOfAnimeNamestag]
-            for i in range(2, 20):
+            for i in tqdm(range(1, 20), desc=f"Scraping Pages for Folder {n}", leave=False):
                 s = self.getSoupPage(n, i)
                 # print(s)
                 listOfAnimeNamestag = s.find_all(class_='d-title')
